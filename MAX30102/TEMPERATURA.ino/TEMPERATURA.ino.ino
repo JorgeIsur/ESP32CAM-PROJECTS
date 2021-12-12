@@ -26,7 +26,7 @@ MAX30105 particleSensor;
 void setup()
 {
   Serial.begin(9600);
-  Serial.println("LECTOR DE TEMPERATURA:\n")
+  Serial.println("LECTOR DE TEMPERATURA:\n");
   Serial.println("Initializing...\n");
 
   // Initialize sensor
@@ -48,8 +48,6 @@ void setup()
 void loop()
 {
   float temperature = particleSensor.readTemperature();
-
-  Serial.print("temperatura C=\n");
   Serial.print(temperature, 4);
   Serial.println();
   delay(1000);
