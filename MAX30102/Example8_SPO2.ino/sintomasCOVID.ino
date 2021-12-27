@@ -1,54 +1,49 @@
 /*
-  Optical SP02 Detection (SPK Algorithm) using the MAX30105 Breakout
-  By: Nathan Seidle @ SparkFun Electronics
-  Date: October 19th, 2016
-  https://github.com/sparkfun/MAX30105_Breakout
-
-  This demo shows heart rate and SPO2 levels.
-
-  It is best to attach the sensor to your finger using a rubber band or other tightening 
-  device. Humans are generally bad at applying constant pressure to a thing. When you 
-  press your finger against the sensor it varies enough to cause the blood in your 
-  finger to flow differently which causes the sensor readings to go wonky.
-
-  This example is based on MAXREFDES117 and RD117_LILYPAD.ino from Maxim. Their example
-  was modified to work with the SparkFun MAX30105 library and to compile under Arduino 1.6.11
-  Please see license file for more info.
-
-  Hardware Connections (Breakoutboard to Arduino):
-  -5V = 5V (3.3V is allowed)
+  AUTOR: JORGE ISUR BALDERAS RAMÍREZ
+  FECHA: 07-12-2021
+  DESCRIPCIÓN: PROGRAMA PARA MEDIR SINTOMAS DE COVID MEDIANTE EL SENSOR
+               MAX30102
+  CONEXIONES EN HARDWARE(ESP32CAM)
+  -5V = 5V (3.3V también funciona)
   -GND = GND
-  -SDA = A4 (or SDA)
-  -SCL = A5 (or SCL)
+  -SDA = GPIO15
+  -SCL = GPIO14
   -INT = Not connected
  
-  The MAX30105 Breakout can handle 5V or 3.3V I2C logic. We recommend powering the board with 5V
-  but it will also run at 3.3V.
+  EL MAX30102 SOPORTA I2C LÓGICA EN 5V Y 3.3V, SE RECOMIENDA ENERGIZAR CON 5V
+  A FIN DE TENER MAYOR PRECISIÓN EN LOS DATOS.
 */
-
-#include <Wire.h>
-#include "MAX30105.h"
-#include "spo2_algorithm.h"
+/***************************************************************************************
+DECLARACIÓN DE BIBLIOTECAS
+****************************************************************************************/
+#include <Wire.h> //BIBLIOTECA PARA EL MANEJO DE I2C
+#include "MAX30105.h" //BIBLIOTECA PARA EL CONTROL DEL MAX3010X
+#include "spo2_algorithm.h" //BIBLIOTECA PARA EL ALGORITMO QUE CÁLCULA OXIGENO EN SANGRE
 #include <WiFi.h>  // Biblioteca para el control de WiFi
 #include <PubSubClient.h> //Biblioteca para conexion MQTT
+/***************************************************************************************
+DECLARACIÓN DE INSTANCIA DEL SENSOR
+****************************************************************************************/
 MAX30105 particleSensor;
-//Datos de WiFi
+/***************************************************************************************
+DATOS DEL WIFI
+****************************************************************************************/
 const char* ssid = "INFINITUM3033_2.4";  // Aquí debes poner el nombre de tu red
 const char* password = "yYYmteq554";  // Aquí debes poner la contraseña de tu red
-
-//Datos del broker MQTT
+/***************************************************************************************
+DATOS DEL BROKER MQTT
+****************************************************************************************/
 const char* mqtt_server = "18.198.240.106"; // Si estas en una red local, coloca la IP asignada, en caso contrario, coloca la IP publica
 IPAddress server(18,198,240,106);
-
-// Objetos
+/***************************************************************************************
+OBJETOS
+****************************************************************************************/
 WiFiClient esp32Client; // Este objeto maneja los datos de conexion WiFi
 PubSubClient client(esp32Client); // Este objeto maneja los datos de conexion al broker
 
 #define MAX_BRIGHTNESS 255
 
 #if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
-//Arduino Uno doesn't have enough SRAM to store 100 samples of IR led data and red led data in 32-bit format
-//To solve this problem, 16-bit MSB of the sampled data will be truncated. Samples become 16-bit data.
 uint16_t irBuffer[100]; //infrared LED sensor data
 uint16_t redBuffer[100];  //red LED sensor data
 #else
@@ -56,17 +51,17 @@ uint32_t irBuffer[100]; //infrared LED sensor data
 uint32_t redBuffer[100];  //red LED sensor data
 #endif
 
-int32_t bufferLength; //data length
-int32_t spo2; //SPO2 value
-int8_t validSPO2; //indicator to show if the SPO2 calculation is valid
-int32_t heartRate; //heart rate value
-int8_t validHeartRate; //indicator to show if the heart rate calculation is valid
+int32_t bufferLength; //LONGITUD DE LOS DATOS
+int32_t spo2; //VALOR DEL OXIGENO EN SANGRE
+int8_t validSPO2; //INDICADOR PARA MOSTRAR SI EL VALOR DEL SPO2 ES VALIDO
+int32_t heartRate; //VALOR DE PULSO CARDIACO
+int8_t validHeartRate; //INDICADOR PARA MOSTRAR SI EL VALOR DEL PULSO CARDIACO ES VALIDO
 
-byte readLED = 33; //Blinks with each data read
+byte readLED = 33; //PARPADEA CON CADA LECTURA DEL SENSOR
 
 void setup()
 {
-  Serial.begin(115200); // initialize serial communication at 115200 bits per second:
+  Serial.begin(115200); // INICIAR LA COMUNICACIÓN SERIAL
   Serial.println("Iniciando...\n");
   Serial.println("LECTOR DE SINTOMAS COVID.\n");
   pinMode(readLED, OUTPUT);
@@ -106,9 +101,9 @@ void setup()
     while (1);
   }
 
-  Serial.println(F("Coloque el dedo en el sensor y aplique un poco de presión.\n"));
+  Serial.println(F("Coloque el dedo en el sensor y aplique presión.\n"));
   Serial.println(F("Presione una tecla cuando este listo.\n"));
-  while (Serial.available() == 0) ; //wait until user presses a key
+  while (Serial.available() == 0) ; //ESPERA A QUE SE APRETE UNA TECLA.
   Serial.read();
 
   byte ledBrightness = 60; //Options: 0=Off to 255=50mA
@@ -148,13 +143,14 @@ void loop()
     Serial.println(irBuffer[i], DEC);
   }
 
-  //calculate heart rate and SpO2 after first 100 samples (first 4 seconds of samples)
+  //CALCULAR EL PULSO CARDIACO Y OXIGENACIÓN DESPUES DE 100 MUESTRAS(PRIMEROS 4 SEGUNDOS)
   maxim_heart_rate_and_oxygen_saturation(irBuffer, bufferLength, redBuffer, &spo2, &validSPO2, &heartRate, &validHeartRate);
 
-  //Continuously taking samples from MAX30102.  Heart rate and SpO2 are calculated every 1 second
+  //CONTINUAMENTE TOMANDO MUESTRAS. PULSO CARDIACO Y OXIGENO SE TOMAN CADA SEGUNDO.
   while (1)
   {
-    //dumping the first 25 sets of samples in the memory and shift the last 75 sets of samples to the top
+    //DESECHANDO LOS PRIMEROS 25 SETS DE MUESTRAS EN MEMORIA Y RECORRIENDO
+    //LAS ULTIMAS 75 MUESTRAS AL PRINCIPIO.
     for (byte i = 25; i < 100; i++)
     {
       redBuffer[i - 25] = redBuffer[i];
@@ -164,8 +160,8 @@ void loop()
     //take 25 sets of samples before calculating the heart rate.
     for (byte i = 75; i < 100; i++)
     {
-      while (particleSensor.available() == false) //do we have new data?
-        particleSensor.check(); //Check the sensor for new data
+      while (particleSensor.available() == false) //¿TENEMOS NUEVAS LECTURAS?
+        particleSensor.check(); //MONITOREA EL SENSOR POR NUEVOS DATOS.
 
       digitalWrite(readLED, !digitalRead(readLED)); //Blink onboard LED with every data read
 
@@ -182,7 +178,7 @@ void loop()
       Serial.print(F(", PULSO CARDIACO=\n"));
       Serial.print(heartRate, DEC);
       char pulso[10];
-      itoa(heartRate,pulso,10);
+      itoa(heartRate,pulso,10);//CONVERTIR INT-->CHAR[] PARA ENVIAR POR MQTT
       client.publish("isur/pulso",pulso);
 
       Serial.print(F(", PULSO CARDIACO VALIDO=\n"));
@@ -191,7 +187,7 @@ void loop()
       Serial.print(F(", OXIGENO EN SANGRE=\n"));
       Serial.print(spo2, DEC);
       char oxigeno[10];
-      itoa(spo2,oxigeno,10);
+      itoa(spo2,oxigeno,10);//CONVERTIR INT-->CHAR[] PARA ENVIAR POR MQTT
       client.publish("isur/oxigeno",oxigeno);
 
       Serial.print(F(", OXIGENO EN SANGRE VALIDO=\n"));
@@ -201,7 +197,7 @@ void loop()
       char tempArray[8];
       Serial.print(",Temperatura=\n")
       Serial.print(temperature, 4);
-      dtostrf(temperature,1,2,tempArray);
+      dtostrf(temperature,1,2,tempArray);//CONVERTIR FLOAT-->CHAR[] PARA ENVIAR POR MQTT
       client.publish("isur/temp",tempArray);
 
       if((heartRate<validHeartRate)or(spo2<validSPO2)or(temperature>=37)){
