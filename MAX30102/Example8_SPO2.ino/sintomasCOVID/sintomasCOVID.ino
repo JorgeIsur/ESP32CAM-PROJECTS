@@ -33,8 +33,8 @@ const char* password = "yYYmteq554";  // Aquí debes poner la contraseña de tu 
 /***************************************************************************************
 DATOS DEL BROKER MQTT
 ****************************************************************************************/
-const char* mqtt_server = "18.198.240.106"; // Si estas en una red local, coloca la IP asignada, en caso contrario, coloca la IP publica
-IPAddress server(18,198,240,106);
+const char* mqtt_server = "187.200.218.167"; // Si estas en una red local, coloca la IP asignada, en caso contrario, coloca la IP publica
+IPAddress server(187,200,218,167);
 /***************************************************************************************
 OBJETOS
 ****************************************************************************************/
@@ -179,8 +179,18 @@ void loop()
       Serial.print(heartRate, DEC);
       char pulso[10];
       itoa(heartRate,pulso,10);//CONVERTIR INT-->CHAR[] PARA ENVIAR POR MQTT
-      client.publish("isur/pulso",pulso);
-
+     
+      //client.loop(); // Esta función es muy importante, ejecuta de manera no bloqueante las funciones necesarias para la comunicación con el broker
+      //client.publish("isur/pulso",pulso);
+      if(!client.publish("isur/pulso",pulso)){
+        Serial.print("No sé pudo publicar pulso.\n");
+        Serial.print(client.state()); // Muestra el codigo de error
+        delay(2000);
+      }
+      else{
+        Serial.print("Mensaje publicado\n");
+        delay(2000);
+      }
       Serial.print(F(", PULSO CARDIACO VALIDO=\n"));
       Serial.print(validHeartRate, DEC);
 
@@ -188,18 +198,35 @@ void loop()
       Serial.print(spo2, DEC);
       char oxigeno[10];
       itoa(spo2,oxigeno,10);//CONVERTIR INT-->CHAR[] PARA ENVIAR POR MQTT
-      client.publish("isur/oxigeno",oxigeno);
-
+      //client.loop(); // Esta función es muy importante, ejecuta de manera no bloqueante las funciones necesarias para la comunicación con el broker
+      //client.publish("isur/oxigeno",oxigeno);
+      if(!client.publish("isur/oxigeno",oxigeno)){
+        Serial.print("No se pudo publicar oxigeno.\n");
+        Serial.print(client.state()); // Muestra el codigo de error
+        delay(2000);
+      }
+      else{
+        Serial.print("Mensaje publicado\n");
+        delay(2000);
+      }
       Serial.print(F(", OXIGENO EN SANGRE VALIDO=\n"));
       Serial.println(validSPO2, DEC);
 
       float temperature = particleSensor.readTemperature();
       char tempArray[8];
-      Serial.print(",Temperatura=\n")
+      Serial.print(",Temperatura=\n");
       Serial.print(temperature, 4);
       dtostrf(temperature,1,2,tempArray);//CONVERTIR FLOAT-->CHAR[] PARA ENVIAR POR MQTT
-      client.publish("isur/temp",tempArray);
-
+      //client.loop(); // Esta función es muy importante, ejecuta de manera no bloqueante las funciones necesarias para la comunicación con el broker
+      if(!client.publish("isur/temp",tempArray)){
+        Serial.print("No se pudo publicar temperatura.\n");
+        Serial.print(client.state()); // Muestra el codigo de error
+        delay(2000);
+      }
+      else{
+        Serial.print("Mensaje publicado\n");
+        delay(2000);
+      }
       if((heartRate<validHeartRate)or(spo2<validSPO2)or(temperature>=37)){
         Serial.println("Usted presenta sintomas de COVID-19\n");
       }
@@ -221,7 +248,6 @@ void reconnect() {
     // Intentar reconexión
     if (client.connect("ESP32CAMClient")) { //Pregunta por el resultado del intento de conexión
       Serial.println("Conectado");
-      client.subscribe("rikoudousennin7"); // Esta función realiza la suscripción al tema
     }// fin del  if (client.connect("ESP32CAMClient"))
     else {  //en caso de que la conexión no se logre
       Serial.print("Conexion fallida, Error rc=");
@@ -233,3 +259,4 @@ void reconnect() {
     }// fin del else
   }// fin del bucle while (!client.connected())
 }// fin de void reconnect()
+
