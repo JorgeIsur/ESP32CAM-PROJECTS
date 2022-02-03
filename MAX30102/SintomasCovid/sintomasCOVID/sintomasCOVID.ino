@@ -211,28 +211,6 @@ void loop()
       }
       Serial.print(F(", OXIGENO EN SANGRE VALIDO=\n"));
       Serial.println(validSPO2, DEC);
-
-      float temperature = particleSensor.readTemperature();
-      char tempArray[8];
-      Serial.print(",Temperatura=\n");
-      Serial.print(temperature, 4);
-      dtostrf(temperature,1,2,tempArray);//CONVERTIR FLOAT-->CHAR[] PARA ENVIAR POR MQTT
-      //client.loop(); // Esta función es muy importante, ejecuta de manera no bloqueante las funciones necesarias para la comunicación con el broker
-      if(!client.publish("isur/temp",tempArray)){
-        Serial.print("No se pudo publicar temperatura.\n");
-        Serial.print(client.state()); // Muestra el codigo de error
-        delay(2000);
-      }
-      else{
-        Serial.print("Mensaje publicado\n");
-        delay(2000);
-      }
-      if((heartRate<validHeartRate)or(spo2<validSPO2)or(temperature>=37)){
-        Serial.println("Usted presenta sintomas de COVID-19\n");
-      }
-      else{
-        Serial.println("Sintomas Normales\n");
-      }
       delay(1500);
     }
 

@@ -1,0 +1,2 @@
+# **LECTOR DE SINTOMAS COVID EN ESP32CAM-AITHINKER**
+## Instrucciones ##
