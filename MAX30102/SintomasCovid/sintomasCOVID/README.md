@@ -15,7 +15,10 @@ Este programa realiza una medici√≥n de signos vitales (Pulso cardiaco/Oxigenaci√
   - SDA = GPIO15
   - SCL = GPIO14
   - INT = No se conecta.
-
+  - LED ROJO = GPIO12
+  - LED AZUL = GPIO13
+  - LED VERDE = GPIO2
+### RECORDEMOS QUE LOS COLORES SON INDIFERENTES.
 Siguiendo el siguiente de mapeo de pines:
 - ESP32CAM/AI-THINKER![ESP32CAM](../../SintomasCovid/sintomasCOVID/imagenes/esp32cam_pinout.png)
 - MAX30102![max3012](../../SintomasCovid/sintomasCOVID/imagenes/max30102_pinout.jpg)

@@ -33,8 +33,8 @@ const char* password = "yYYmteq554";  // Aquí debes poner la contraseña de tu 
 /***************************************************************************************
 DATOS DEL BROKER MQTT
 ****************************************************************************************/
-const char* mqtt_server = "187.200.218.167"; // Si estas en una red local, coloca la IP asignada, en caso contrario, coloca la IP publica
-IPAddress server(187,200,218,167);
+const char* mqtt_server = "187.200.114.169"; // Si estas en una red local, coloca la IP asignada, en caso contrario, coloca la IP publica
+IPAddress server(187,200,114,169);
 /***************************************************************************************
 OBJETOS
 ****************************************************************************************/
@@ -56,8 +56,14 @@ int32_t spo2; //VALOR DEL OXIGENO EN SANGRE
 int8_t validSPO2; //INDICADOR PARA MOSTRAR SI EL VALOR DEL SPO2 ES VALIDO
 int32_t heartRate; //VALOR DE PULSO CARDIACO
 int8_t validHeartRate; //INDICADOR PARA MOSTRAR SI EL VALOR DEL PULSO CARDIACO ES VALIDO
-
+/**********************************************************************************
+LEDS y PINES
+***********************************************************************************/
+#define LED_OK 12
+#define LED_CONEXION_WIFI 13
+#define LED_MQTT 2
 byte readLED = 33; //PARPADEA CON CADA LECTURA DEL SENSOR
+#define push_button 4
 
 void setup()
 {
@@ -65,15 +71,22 @@ void setup()
   Serial.println("Iniciando...\n");
   Serial.println("LECTOR DE SINTOMAS COVID.\n");
   pinMode(readLED, OUTPUT);
+  pinMode(LED_OK, OUTPUT);
+  pinMode(LED_CONEXION_WIFI, OUTPUT);
+  pinMode(LED_MQTT,OUTPUT);
+  pinMode(push_button,INPUT);
+  digitalWrite(LED_OK,HIGH);//EL DISPOSITIVO SE ENCENDIO
   Serial.print("Conectar a ");
   Serial.println(ssid);
  
   WiFi.begin(ssid, password); // Esta es la función que realiz la conexión a WiFi
  
   while (WiFi.status() != WL_CONNECTED) { // Este bucle espera a que se realice la conexión
-    digitalWrite (readLED, HIGH);
+    digitalWrite(readLED, HIGH);
+    digitalWrite(LED_CONEXION_WIFI, HIGH);
     delay(500); //dado que es de suma importancia esperar a la conexión, debe usarse espera bloqueante
-    digitalWrite (readLED, LOW);
+    digitalWrite(readLED, LOW);
+    digitalWrite(LED_CONEXION_WIFI,LOW);
     Serial.print(".");  // Indicador de progreso
     delay (5);
   }
@@ -86,7 +99,8 @@ void setup()
 
   // Si se logro la conexión, encender led
   if (WiFi.status () > 0){
-    digitalWrite (readLED, LOW);
+    digitalWrite(readLED, LOW);
+    digitalWrite(LED_CONEXION_WIFI, HIGH);
   }
   delay (1000); // Esta espera es solo una formalidad antes de iniciar la comunicación con el broker
   // Conexión con el broker MQTT
@@ -100,81 +114,78 @@ void setup()
     Serial.println(F("MAX3010X NO ENCONTRADO. POR FAVOR REVISE EL CABLEADO O LA ALIMENTACIÓN. \n"));
     while (1);
   }
-
-  Serial.println(F("Coloque el dedo en el sensor y aplique presión.\n"));
-  Serial.println(F("Presione una tecla cuando este listo.\n"));
-  while (Serial.available() == 0) ; //ESPERA A QUE SE APRETE UNA TECLA.
-  Serial.read();
-
-  byte ledBrightness = 60; //Options: 0=Off to 255=50mA
-  byte sampleAverage = 4; //Options: 1, 2, 4, 8, 16, 32
-  byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
-  byte sampleRate = 100; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
-  int pulseWidth = 411; //Options: 69, 118, 215, 411
-  int adcRange = 4096; //Options: 2048, 4096, 8192, 16384
-
-  particleSensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange); //Configure sensor with these settings
-  particleSensor.enableDIETEMPRDY(); //Enable the temp ready interrupt. This is required.
-
 }
 
 void loop()
 {
   //Verificar siempre que haya conexión al broker
+  Serial.println("Conectando a broker MQTT...");
   if (!client.connected()) {
     reconnect();  // En caso de que no haya conexión, ejecutar la función de reconexión, definida despues del void setup ()
   }// fin del if (!client.connected())
+  Serial.println("Conectado a:");
+  Serial.println(server);
   client.loop(); // Esta función es muy importante, ejecuta de manera no bloqueante las funciones necesarias para la comunicación con el broker
-  bufferLength = 100; //buffer length of 100 stores 4 seconds of samples running at 25sps
+  digitalWrite(LED_MQTT,HIGH);
+  digitalWrite(LED_OK,HIGH);
+  int push_button_state = digitalRead(push_button);
+  if(push_button_state==HIGH){
+    Serial.println(F("Coloque el dedo en el sensor y aplique presión.\n"));
+    Serial.println(F("Presione una tecla cuando este listo.\n"));
+    while (Serial.available() == 0) ; //ESPERA A QUE SE APRETE UNA TECLA.
+    Serial.read();
+    byte ledBrightness = 60; //Options: 0=Off to 255=50mA
+    byte sampleAverage = 4; //Options: 1, 2, 4, 8, 16, 32
+    byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
+    byte sampleRate = 100; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
+    int pulseWidth = 411; //Options: 69, 118, 215, 411
+    int adcRange = 4096; //Options: 2048, 4096, 8192, 16384
 
-  //read the first 100 samples, and determine the signal range
-  for (byte i = 0 ; i < bufferLength ; i++)
-  {
-    while (particleSensor.available() == false) //do we have new data?
-      particleSensor.check(); //Check the sensor for new data
+    particleSensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange); //Configure sensor with these settings
+    particleSensor.enableDIETEMPRDY(); //Enable the temp ready interrupt. This is required.
+    bufferLength = 100; //buffer length of 100 stores 4 seconds of samples running at 25sps
+    //read the first 100 samples, and determine the signal range
+    for (byte i = 0 ; i < bufferLength ; i++){
+      while (particleSensor.available() == false){ //do we have new data?
+        particleSensor.check(); //Check the sensor for new data
+      }
+      redBuffer[i] = particleSensor.getRed();
+      irBuffer[i] = particleSensor.getIR();
+      particleSensor.nextSample(); //We're finished with this sample so move to next sample
 
-    redBuffer[i] = particleSensor.getRed();
-    irBuffer[i] = particleSensor.getIR();
-    particleSensor.nextSample(); //We're finished with this sample so move to next sample
+      Serial.print(F("red="));
+      Serial.print(redBuffer[i], DEC);
+      Serial.print(F(", ir="));
+      Serial.println(irBuffer[i], DEC);
+    }
 
-    Serial.print(F("red="));
-    Serial.print(redBuffer[i], DEC);
-    Serial.print(F(", ir="));
-    Serial.println(irBuffer[i], DEC);
-  }
-
-  //CALCULAR EL PULSO CARDIACO Y OXIGENACIÓN DESPUES DE 100 MUESTRAS(PRIMEROS 4 SEGUNDOS)
-  maxim_heart_rate_and_oxygen_saturation(irBuffer, bufferLength, redBuffer, &spo2, &validSPO2, &heartRate, &validHeartRate);
-
-  //CONTINUAMENTE TOMANDO MUESTRAS. PULSO CARDIACO Y OXIGENO SE TOMAN CADA SEGUNDO.
-  while (1)
-  {
+    //CALCULAR EL PULSO CARDIACO Y OXIGENACIÓN DESPUES DE 100 MUESTRAS(PRIMEROS 4 SEGUNDOS)
+    maxim_heart_rate_and_oxygen_saturation(irBuffer, bufferLength, redBuffer, &spo2, &validSPO2, &heartRate, &validHeartRate);
     //DESECHANDO LOS PRIMEROS 25 SETS DE MUESTRAS EN MEMORIA Y RECORRIENDO
     //LAS ULTIMAS 75 MUESTRAS AL PRINCIPIO.
-    for (byte i = 25; i < 100; i++)
-    {
+    for (byte i = 25; i < 100; i++){
       redBuffer[i - 25] = redBuffer[i];
       irBuffer[i - 25] = irBuffer[i];
     }
-
     //take 25 sets of samples before calculating the heart rate.
     for (byte i = 75; i < 100; i++)
     {
-      while (particleSensor.available() == false) //¿TENEMOS NUEVAS LECTURAS?
+      while (particleSensor.available() == false){ //¿TENEMOS NUEVAS LECTURAS?
         particleSensor.check(); //MONITOREA EL SENSOR POR NUEVOS DATOS.
-
+      }
       digitalWrite(readLED, !digitalRead(readLED)); //Blink onboard LED with every data read
 
       redBuffer[i] = particleSensor.getRed();
       irBuffer[i] = particleSensor.getIR();
       particleSensor.nextSample(); //We're finished with this sample so move to next sample
-
-      //send samples and calculation result to terminal program through UART
       Serial.print(F("red="));
       Serial.print(redBuffer[i], DEC);
       Serial.print(F(", ir="));
       Serial.print(irBuffer[i], DEC);
-
+    }
+    //After gathering 25 new samples recalculate HR and SP02
+    maxim_heart_rate_and_oxygen_saturation(irBuffer, bufferLength, redBuffer, &spo2, &validSPO2, &heartRate, &validHeartRate);
+    //send samples and calculation result to terminal program through UART
       Serial.print(F(", PULSO CARDIACO=\n"));
       Serial.print(heartRate, DEC);
       char pulso[10];
@@ -183,12 +194,27 @@ void loop()
       //client.loop(); // Esta función es muy importante, ejecuta de manera no bloqueante las funciones necesarias para la comunicación con el broker
       //client.publish("isur/pulso",pulso);
       if(!client.publish("isur/pulso",pulso)){
-        Serial.print("No sé pudo publicar pulso.\n");
+        Serial.print("No sé pudo publicar en isur/pulso.\n");
+        Serial.print("Error:");
         Serial.print(client.state()); // Muestra el codigo de error
+        digitalWrite(LED_OK,HIGH);
+        delay(1000);
+        digitalWrite(LED_OK,LOW);
+        delay(1000);
+        digitalWrite(LED_OK,HIGH);
+        delay(1000);
+        digitalWrite(LED_OK,LOW);
         delay(2000);
       }
       else{
         Serial.print("Mensaje publicado\n");
+        digitalWrite(LED_MQTT,HIGH);
+        delay(1000);
+        digitalWrite(LED_MQTT,LOW);
+        delay(1000);
+        digitalWrite(LED_MQTT,HIGH);
+        delay(1000);
+        digitalWrite(LED_MQTT,LOW);
         delay(2000);
       }
       Serial.print(F(", PULSO CARDIACO VALIDO=\n"));
@@ -201,29 +227,65 @@ void loop()
       //client.loop(); // Esta función es muy importante, ejecuta de manera no bloqueante las funciones necesarias para la comunicación con el broker
       //client.publish("isur/oxigeno",oxigeno);
       if(!client.publish("isur/oxigeno",oxigeno)){
-        Serial.print("No se pudo publicar oxigeno.\n");
+        Serial.print("No se pudo publicar en isur/oxigeno.\n");
+        Serial.print("Error:");
         Serial.print(client.state()); // Muestra el codigo de error
+        digitalWrite(LED_OK,HIGH);
+        delay(1000);
+        digitalWrite(LED_OK,LOW);
+        delay(1000);
+        digitalWrite(LED_OK,HIGH);
+        delay(1000);
+        digitalWrite(LED_OK,LOW);
         delay(2000);
       }
       else{
         Serial.print("Mensaje publicado\n");
+        digitalWrite(LED_MQTT,HIGH);
+        delay(1000);
+        digitalWrite(LED_MQTT,LOW);
+        delay(1000);
+        digitalWrite(LED_MQTT,HIGH);
+        delay(1000);
+        digitalWrite(LED_MQTT,LOW);
         delay(2000);
       }
       Serial.print(F(", OXIGENO EN SANGRE VALIDO=\n"));
       Serial.println(validSPO2, DEC);
       delay(1500);
-    }
-
-    //After gathering 25 new samples recalculate HR and SP02
-    maxim_heart_rate_and_oxygen_saturation(irBuffer, bufferLength, redBuffer, &spo2, &validSPO2, &heartRate, &validHeartRate);
+  }//FIN IF_BUTTON
+  else{
+    Serial.println("MODO STANDBY");
+    Serial.println("Presione el boton por 3 segundos para tomar las medidas");
+    digitalWrite(LED_OK,HIGH);
+    digitalWrite(LED_CONEXION_WIFI,LOW);
+    digitalWrite(LED_MQTT,LOW);
+    delay(1000);
+    digitalWrite(LED_OK,HIGH);
+    digitalWrite(LED_CONEXION_WIFI,HIGH);
+    digitalWrite(LED_MQTT,LOW);
+    delay(1000);
+    digitalWrite(LED_OK,HIGH);
+    digitalWrite(LED_CONEXION_WIFI,HIGH);
+    digitalWrite(LED_MQTT,HIGH);
+    delay(1000);
+    digitalWrite(LED_OK,LOW);
+    digitalWrite(LED_CONEXION_WIFI,LOW);
+    digitalWrite(LED_MQTT,HIGH);
+    delay(1000);
+    digitalWrite(LED_OK,LOW);
+    digitalWrite(LED_CONEXION_WIFI,HIGH);
+    digitalWrite(LED_MQTT,HIGH);
   }
 }
 // Función para reconectarse
 void reconnect() {
   // Bucle hasta lograr conexión
   while (!client.connected()) { // Pregunta si hay conexión
+    digitalWrite(LED_MQTT,LOW);
     Serial.print("Tratando de contectarse...");
     // Intentar reconexión
+    digitalWrite(LED_MQTT,HIGH);
     if (client.connect("ESP32CAMClient")) { //Pregunta por el resultado del intento de conexión
       Serial.println("Conectado");
     }// fin del  if (client.connect("ESP32CAMClient"))
@@ -231,10 +293,10 @@ void reconnect() {
       Serial.print("Conexion fallida, Error rc=");
       Serial.print(client.state()); // Muestra el codigo de error
       Serial.println(" Volviendo a intentar en 5 segundos");
+      digitalWrite(LED_MQTT,LOW);
       // Espera de 5 segundos bloqueante
       delay(5000);
       Serial.println (client.connected ()); // Muestra estatus de conexión
     }// fin del else
   }// fin del bucle while (!client.connected())
 }// fin de void reconnect()
-
