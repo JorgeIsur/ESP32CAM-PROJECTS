@@ -4,7 +4,9 @@
     DISPOSITIVO: ESP32CAM + DHT11
     DESCRIPCIÓN: Programa que muestra la temperatura medida por el DHT11
     GPIO DESCRIPTION:
-    DHT11------------------->GPIO2
+    DHT11 DATA-------------->GPIO2
+    DHT11 POWER------------->3.3V
+    DHT11 GND--------------->GND
     LED_OK(VERDE)----------->GPIO13
     LED_WARNING(AMARILLO)--->GPIO14
     LED_FATAL(ROJO)--------->GPIO15

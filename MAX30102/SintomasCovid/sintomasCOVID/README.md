@@ -21,8 +21,11 @@ Este programa realiza una medici처n de signos vitales (Pulso cardiaco/Oxigenaci�
 ### RECORDEMOS QUE LOS COLORES SON INDIFERENTES.
 Siguiendo el siguiente de mapeo de pines:
 - ESP32CAM/AI-THINKER![ESP32CAM](../../SintomasCovid/sintomasCOVID/imagenes/esp32cam_pinout.png)
-- MAX30102![max3012](../../SintomasCovid/sintomasCOVID/imagenes/max30102_pinout.jpg)
-### Para poder programar nuestro ESP32CAM se necesita un modulo programador, en este caso se utiliz처 un FTDI con las siguientes conexiones para subir el c처digo: ###
+- MAX30102
+
+![max3012](../../SintomasCovid/sintomasCOVID/imagenes/max30102_pinout.jpg)
+## FTDI 
+Para poder programar nuestro ESP32CAM se necesita un modulo programador, en este caso se utiliz처 un FTDI con las siguientes conexiones para subir el c처digo:
 
 - Modulo programador FTDI![FTDI](../../SintomasCovid/sintomasCOVID/imagenes/programar.png)
 ## SOFTWARE NECESARIO ##
