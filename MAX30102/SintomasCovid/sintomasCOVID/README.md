@@ -27,7 +27,9 @@ Siguiendo el siguiente de mapeo de pines:
 ## FTDI 
 Para poder programar nuestro ESP32CAM se necesita un modulo programador, en este caso se utilizó un FTDI con las siguientes conexiones para subir el código:
 
-- Modulo programador FTDI![FTDI](../../SintomasCovid/sintomasCOVID/imagenes/programar.png)
+- Modulo programador FTDI
+
+![FTDI](../../SintomasCovid/sintomasCOVID/imagenes/programar.png)
 ## SOFTWARE NECESARIO ##
 Se utilizó arduino IDE para el manejo de bibliotecas y la edición del código fuente.
 
