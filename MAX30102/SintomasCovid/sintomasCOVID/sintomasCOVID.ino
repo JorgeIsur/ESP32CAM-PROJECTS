@@ -33,8 +33,8 @@ const char* password = "yYYmteq554";  // Aquí debes poner la contraseña de tu 
 /***************************************************************************************
 DATOS DEL BROKER MQTT
 ****************************************************************************************/
-const char* mqtt_server = "187.200.114.169"; // Si estas en una red local, coloca la IP asignada, en caso contrario, coloca la IP publica
-IPAddress server(187,200,218,12);
+const char* mqtt_server = "187.200.112.52"; // Si estas en una red local, coloca la IP asignada, en caso contrario, coloca la IP publica
+IPAddress server(187,200,112,52);
 /***************************************************************************************
 OBJETOS
 ****************************************************************************************/
