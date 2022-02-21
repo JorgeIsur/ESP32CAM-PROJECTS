@@ -4,8 +4,15 @@
     DISPOSITIVO: ESP32CAM + DHT11
     DESCRIPCIÓN: Programa que muestra la temperatura medida por el DHT11
     GPIO DESCRIPTION:
-
-
+    DHT11------------------->GPIO2
+    LED_OK(VERDE)----------->GPIO13
+    LED_WARNING(AMARILLO)--->GPIO14
+    LED_FATAL(ROJO)--------->GPIO15
+    LED_STATUS-------------->GPIO33{
+      INVERSO: ON--->LOW
+               OFF-->HIGH
+      NO EXPUESTO: SOLO SE PUEDE MANIPULAR MEDIANTE SOFTWARE.
+    }
 
 */
 //BIBLIOTECAS
@@ -34,7 +41,7 @@ DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
   Serial.begin(115200);
-  Serial.println(F("Funcionando!"));
+  Serial.println(F("Lector de temperatura y humedad iniciado."));
   pinMode (LED_OK, OUTPUT);//Specify that LED pin is output
   pinMode (LED_WARNING, OUTPUT);//Specify that LED pin is output
   pinMode (LED_FATAL, OUTPUT);//Specify that LED pin is output
@@ -92,13 +99,13 @@ void loop() {
     Serial.println(F("ERROR AL REGISTRAR LOS DATOS DEL SENSOR!"));
     return;
   }
-  if (t<30)
+  if (t<25)
   {
       digitalWrite(LED_OK,HIGH);
       digitalWrite(LED_WARNING,LOW);
       digitalWrite(LED_FATAL,LOW);
   }
-  if (t>=30 && t<40)
+  if (t>=25 && t<30)
   {
       digitalWrite(LED_WARNING,HIGH);
       digitalWrite(LED_FATAL,LOW);
@@ -114,8 +121,8 @@ void loop() {
   Serial.print(F("%  Temperatura: "));
   Serial.print(t);
   Serial.print(F("°C \n"));
-  client.publish("rikoudousennin7",humedad);
-  client.publish("rikoudousennin7",temp);
+  client.publish("isur/humedad",humedad);
+  client.publish("isur/temp",temp);
 }
 // Función para reconectarse
 void reconnect() {
@@ -125,7 +132,6 @@ void reconnect() {
     // Intentar reconexión
     if (client.connect("ESP32CAMClient")) { //Pregunta por el resultado del intento de conexión
       Serial.println("Conectado");
-      client.subscribe("rikoudousennin7"); // Esta función realiza la suscripción al tema
     }// fin del  if (client.connect("ESP32CAMClient"))
     else {  //en caso de que la conexión no se logre
       Serial.print("Conexion fallida, Error rc=");

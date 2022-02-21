@@ -34,7 +34,7 @@ const char* password = "yYYmteq554";  // Aquí debes poner la contraseña de tu 
 DATOS DEL BROKER MQTT
 ****************************************************************************************/
 const char* mqtt_server = "187.200.114.169"; // Si estas en una red local, coloca la IP asignada, en caso contrario, coloca la IP publica
-IPAddress server(187,200,114,169);
+IPAddress server(187,200,218,12);
 /***************************************************************************************
 OBJETOS
 ****************************************************************************************/
@@ -131,9 +131,7 @@ void loop()
   int push_button_state = digitalRead(push_button);
   if(push_button_state==HIGH){
     Serial.println(F("Coloque el dedo en el sensor y aplique presión.\n"));
-    Serial.println(F("Presione una tecla cuando este listo.\n"));
-    while (Serial.available() == 0) ; //ESPERA A QUE SE APRETE UNA TECLA.
-    Serial.read();
+    delay(2000);
     byte ledBrightness = 60; //Options: 0=Off to 255=50mA
     byte sampleAverage = 4; //Options: 1, 2, 4, 8, 16, 32
     byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
@@ -294,8 +292,25 @@ void reconnect() {
       Serial.print(client.state()); // Muestra el codigo de error
       Serial.println(" Volviendo a intentar en 5 segundos");
       digitalWrite(LED_MQTT,LOW);
-      // Espera de 5 segundos bloqueante
-      delay(5000);
+      delay(500);
+      digitalWrite(LED_MQTT,HIGH);
+      delay(500);
+      digitalWrite(LED_MQTT,LOW);
+      delay(500);
+      digitalWrite(LED_MQTT,HIGH);
+      delay(500);
+      digitalWrite(LED_MQTT,LOW);
+      delay(500);
+      digitalWrite(LED_MQTT,HIGH);
+      delay(500);
+      digitalWrite(LED_MQTT,LOW);
+      delay(500);
+      digitalWrite(LED_MQTT,HIGH);
+      delay(500);
+      digitalWrite(LED_MQTT,LOW);
+      delay(500);
+      digitalWrite(LED_MQTT,HIGH);
+      delay(500);
       Serial.println (client.connected ()); // Muestra estatus de conexión
     }// fin del else
   }// fin del bucle while (!client.connected())
